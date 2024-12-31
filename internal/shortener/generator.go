@@ -1,17 +1,12 @@
-package main
+package generator
 
 import (
 	"crypto/md5"
 	"encoding/binary"
-	"fmt"
 )
 
-const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
-func main() {
-	var url string
-
-	fmt.Scanln(&url)
+func encodedUrl(url string) string {
+	const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	hash := md5.Sum([]byte(url))
 	firstSevenBytes := hash[:7]
 	paddedBytes := append([]byte{0}, firstSevenBytes...)
@@ -23,5 +18,6 @@ func main() {
 		result = string(base62[remainder]) + result
 		dec /= 62
 	}
-	fmt.Println(result)
+
+	return result
 }
