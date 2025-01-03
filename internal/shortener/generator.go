@@ -1,11 +1,11 @@
-package generator
+package shortener
 
 import (
 	"crypto/md5"
 	"encoding/binary"
 )
 
-func encodedUrl(url string) string {
+func encodeUrl(url string) string {
 	const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	hash := md5.Sum([]byte(url))
 	firstSevenBytes := hash[:7]

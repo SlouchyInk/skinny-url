@@ -10,14 +10,18 @@ import (
 )
 
 func main() {
+	// Load environment variables from .env
+	err := godotenv.Load("../../.env")
 
-	godotenv.Load()
-	rawHosts := os.Getenv("HOSTS")
-	cassHosts := strings.Split(rawHosts, ",")
+	// Parse the comma-separated HOSTS variable
+	cassHosts := strings.Split(os.Getenv("HOSTS"), ",")
 	keyspace := os.Getenv("KEYSPACE")
 
-	// CassDB is a Cassandra DB session
+	// Initialize Cassandra DB session
 	cassDB, err := db.NewCassandraDB(cassHosts, keyspace)
-	fmt.Println(cassDB, err)
-
+	if err != nil {
+		fmt.Println("Error creating Cassandra session:", err)
+		return
+	}
+	fmt.Println("Cassandra DB session initialized successfully:", cassDB)
 }
