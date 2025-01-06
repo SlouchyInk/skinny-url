@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/gocql/gocql"
 )
 
@@ -23,13 +25,18 @@ func NewCassandraDB(hosts []string, keyspace string) (*CassandraDB, error) {
 }
 
 func (db *CassandraDB) SaveShortURL(short_url string, original_url string) error {
-	return db.session.Query(
-		"INSERT INTO url_mapping (short_url, long_url) VALUES (?, ?)",
-		short_url, original_url).Exec()
+	expiration_date := time.Now().Add(time.Hour * 24 * 365)
+	err := db.session.Query(
+		"INSERT INTO url_mapping (short_url, long_url, expiration_date, creation_date) VALUES (?, ?, ?, ?)",
+		short_url, original_url, expiration_date, time.Now()).Exec()
+	db.session.Close()
+	return err
+
 }
 
 func (db *CassandraDB) GetOriginalURL(short_url string) (string, error) {
 	var url string
 	err := db.session.Query("SELECT long_url FROM short_url WHERE short_url = ?", short_url).Scan(&url)
+	db.session.Close()
 	return url, err
 }
