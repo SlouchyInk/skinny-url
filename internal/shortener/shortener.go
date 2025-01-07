@@ -56,9 +56,36 @@ func (s *Service) ShortenURL(original_url string) (string, error) {
 }
 
 func (s *Service) GetOriginalURL(short_url string) (string, error) {
-	url, err := s.Cache.Get(short_url)
-	if err == nil {
+	cacheCh := make(chan string)
+	dbCh := make(chan string)
+	errCh := make(chan error)
+
+	go func() {
+		url, err := s.Cache.Get(short_url)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		cacheCh <- url
+	}()
+
+	go func() {
+		url, err := s.DB.GetOriginalURL(short_url)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		dbCh <- url
+	}()
+
+	select {
+	case url := <-cacheCh:
 		return url, nil
+	case url := <-dbCh:
+		_ = s.Cache.Set(short_url, url)
+		return url, nil
+	case err := <-errCh:
+		return "", err
 	}
-	return s.DB.GetOriginalURL(short_url)
+
 }
