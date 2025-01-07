@@ -25,28 +25,32 @@ func (s *Service) ShortenURL(original_url string) (string, error) {
 
 	for i := 0; i < retryLimit; i++ {
 		offsetInput := fmt.Sprintf("%s-%d", original_url, i)
-		short_url := fmt.Sprintf("%s/%s", s.Domain, encodeUrl(offsetInput))
+		short_code := encodeUrl(offsetInput)
 
 		// Checking for collision
-		existingURL, err := s.DB.GetOriginalURL(short_url)
+		existingURL, err := s.DB.GetOriginalURL(short_code)
 		if err != nil {
+			fmt.Printf("Error when checking for collision: %s", err)
 			return "", err
 		}
 
 		// No collision found; save to db and cache
 		if existingURL == "" {
-			err := s.DB.SaveShortURL(short_url, original_url)
+			err := s.DB.SaveShortCode(short_code, original_url)
 			if err != nil {
+				fmt.Printf("Error when no collision was found: %s", err)
 				return "", err
 			}
-			_ = s.Cache.Set(short_url, original_url)
-			return short_url, nil
+			_ = s.Cache.Set(short_code, original_url)
+			return fmt.Sprintf("%s/%s", s.Domain, short_code), nil
 		}
 
 		// Found collision but checking if it maps to same original URL
 		if existingURL == original_url {
-			return short_url, nil
+			return fmt.Sprintf("%s/%s", s.Domain, short_code), nil
 		}
+
+		fmt.Printf("Collision detected for shortCode %s. Retrying... (attempt %d)\n", short_code, i+1)
 	}
 	return "", fmt.Errorf("collision resoltuion failed. Please try with a different URL")
 }

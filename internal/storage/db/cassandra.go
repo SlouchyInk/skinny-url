@@ -24,19 +24,22 @@ func NewCassandraDB(hosts []string, keyspace string) (*CassandraDB, error) {
 	return &CassandraDB{session: session}, nil
 }
 
-func (db *CassandraDB) SaveShortURL(short_url string, original_url string) error {
-	expiration_date := time.Now().Add(time.Hour * 24 * 365)
+func (db *CassandraDB) SaveShortCode(short_url string, original_url string) error {
+	expiration_date := time.Now().AddDate(1, 0, 0)
 	err := db.session.Query(
 		"INSERT INTO url_mapping (short_url, long_url, expiration_date, creation_date) VALUES (?, ?, ?, ?)",
 		short_url, original_url, expiration_date, time.Now()).Exec()
-	db.session.Close()
 	return err
 
 }
 
-func (db *CassandraDB) GetOriginalURL(short_url string) (string, error) {
+func (db *CassandraDB) GetOriginalURL(short_code string) (string, error) {
 	var url string
-	err := db.session.Query("SELECT long_url FROM short_url WHERE short_url = ?", short_url).Scan(&url)
-	db.session.Close()
+	err := db.session.Query("SELECT long_url FROM url_mapping WHERE short_url = ?", short_code).Scan(&url)
+	if err != nil {
+		if err == gocql.ErrNotFound {
+			return "", nil // No collision
+		}
+	}
 	return url, err
 }
