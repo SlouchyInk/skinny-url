@@ -6,6 +6,7 @@ import (
 	net "net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hdurham99/skinny-url/internal/http"
 	"github.com/hdurham99/skinny-url/internal/shortener"
@@ -40,6 +41,16 @@ func main() {
 
 	// Create HTTP router
 	router := http.NewRouter(handler)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			log.Println("Flushing click counts from Redis to Cassandra")
+			shortService.Cache.FlushClickCountsToDB(cassDB)
+		}
+	}()
 
 	// Start the server
 	log.Fatal(net.ListenAndServe(":8080", router))
